@@ -1,0 +1,4 @@
+/data/liujie/hnsw_test/CMakeFiles/rebuild_cache.dir
+/data/liujie/hnsw_test/CMakeFiles/edit_cache.dir
+/data/liujie/hnsw_test/CMakeFiles/main.dir
+/data/liujie/hnsw_test/CMakeFiles/sift_test.dir

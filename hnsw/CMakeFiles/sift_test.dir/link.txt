@@ -1,0 +1,2 @@
+/data/opt/brew/bin/ar qc libsift_test.a  CMakeFiles/sift_test.dir/netflix_test.cpp.o
+/data/opt/brew/bin/ranlib libsift_test.a

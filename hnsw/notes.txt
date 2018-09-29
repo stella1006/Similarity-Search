@@ -1,0 +1,1 @@
+this is basically the original version of HNSW, except that I changed the definition of inner product from 1 - sum to - sum.
