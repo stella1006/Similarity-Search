@@ -83,7 +83,7 @@ int main (int argc, char *argv[]) {
 
     po::options_description desc_hidden("Expert options");
     desc_hidden.add_options()
-    ("iteration,I", po::value(&I)->default_value(100), "expert")
+    ("iteration,I", po::value(&I)->default_value(200), "expert")
     ("rho,S", po::value(&S)->default_value(1.0), "expert")
     ("delta,T", po::value(&T)->default_value(0.001), "expert")
     ("noise", po::value(&noise)->default_value(0), "expert")
@@ -260,6 +260,7 @@ int main (int argc, char *argv[]) {
             os << i++;
             BOOST_FOREACH(KNN::Element const &e, knn) {
                 os << ' ' << e.key;
+                os << ' ' << oracle(i, e.key);
             }
             os << endl;
         }
