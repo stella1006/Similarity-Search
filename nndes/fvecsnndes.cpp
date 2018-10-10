@@ -258,9 +258,11 @@ int main (int argc, char *argv[]) {
         int i = 0;
         BOOST_FOREACH(KNN const &knn, nn) {
             os << i++;
-            BOOST_FOREACH(KNN::Element const &e, knn) {
-                os << ' ' << e.key;
-                os << ' ' << oracle(i, e.key);
+            BOOST_FOREACH(KNN::Element const &e1, knn) {
+                //os << ' ' << e.key;
+                BOOST_FOREACH(KNN::Element const &e2, knn) {
+                    os << ' ' << oracle(e1.key, e2.key);
+                }
             }
             os << endl;
         }
