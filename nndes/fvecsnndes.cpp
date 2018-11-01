@@ -227,6 +227,7 @@ int main (int argc, char *argv[]) {
     float total = float(N) * (N - 1) / 2;
     cout.precision(5);
     cout.setf(ios::fixed);
+    ofstream os("iter_log.txt");
     for (int it = 0; it < I; ++it) {
 
 	Timer iter_timer;
@@ -245,10 +246,12 @@ int main (int argc, char *argv[]) {
             }
             recall /= control;
         }
+        os << setw(2) << it << " update:" << rate << " recall:" << recall << " cost:" << float(nndes.getCost())/total  << endl;
         cout << setw(2) << it << " update:" << rate << " recall:" << recall << " cost:" << float(nndes.getCost())/total  << endl;
         std::cout << "iteration time " << ':' <<  iter_time << " seconds\n";
 	if (rate < T) break;
     }
+    os.close();
 
     cout << boost::format("Construction time: %1%s.") % timer.tuck(0) << endl;
 
@@ -259,10 +262,10 @@ int main (int argc, char *argv[]) {
         BOOST_FOREACH(KNN const &knn, nn) {
             os << i++;
             BOOST_FOREACH(KNN::Element const &e1, knn) {
-                //os << ' ' << e.key;
-                BOOST_FOREACH(KNN::Element const &e2, knn) {
-                    os << ' ' << oracle(e1.key, e2.key);
-                }
+                os << ' ' << e1.key;
+                // BOOST_FOREACH(KNN::Element const &e2, knn) {
+                //     os << ' ' << oracle(e1.key, e2.key);
+                // }
             }
             os << endl;
         }

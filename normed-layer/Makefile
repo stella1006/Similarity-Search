@@ -6,7 +6,7 @@ LDLIBS += -lboost_program_options  -lpthread -lm
 
 .PHONY: all clean
 
-PROGS= eKNN
+PROGS= exKNN
 
 all:    $(PROGS)
 
