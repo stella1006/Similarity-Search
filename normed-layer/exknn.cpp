@@ -18,32 +18,7 @@
 using namespace std;
 
 typedef Dataset<float> FloatDataset;
-
-struct IncreaseCmp
-{
-    bool operator()(const pair<int,float> &a, const pair<int,float> &b)
-    {
-        return a.second > b.second;
-    }
-};
-
-struct DecreaseCmp
-{
-    bool operator()(const pair<int,float> &a, const pair<int,float> &b)
-    {
-        return a.second < b.second;
-    }
-};
-
-
-typedef priority_queue<pair<int,float>, vector<pair<int,float>>, DecreaseCmp > Decrease_queue;
-typedef priority_queue<pair<int,float>, vector<pair<int,float>>, IncreaseCmp > Increase_queue;
 typedef vector<pair<int,float>> Pair_vector;
-
-bool myCmpfunc(pair<int,float> a, pair<int,float> b)
-{
-    return a.second > b.second;
-}
 
 struct _myclass {
     bool operator() (pair<int, Pair_vector> a, pair<int, Pair_vector> b)
@@ -51,21 +26,6 @@ struct _myclass {
         return a.first < b.first;
     }
 } myCmpClass;
-
-
-
-
-template<typename T>
-T removeExtra(T solution, int efK) {
-    T result;
-    while (!solution.empty())
-    {
-        result.push(solution.top());
-        solution.pop();
-        if (result.size() >= efK) break;
-    }
-    return result;
-}
 
 int deleteTop(vector<pair<int, float> >& vec, int size)
 {
@@ -108,33 +68,6 @@ int updateDecrease(vector<pair<int, float> >& vec, int size, pair<int, float> t)
     return 0;
 }
 
-// int updateIncrease(vector<pair<int, float> >& vec, int construction_k, pair<int, float> t)
-// {
-//     int i = construction_k - 1;
-//     int j;
-//     if ((t.second >= vec.back().second)) {
-//         return -1;
-//     }
-//     for (;;)
-//     {
-//         if (i == 0) break;
-//         j = i - 1;
-//         if (vec.at(j).second < t.second) break;
-//         i = j;
-//     }
-//     j = construction_k - 1;
-//     for (;;)
-//     {
-//         if (j == i) break;
-//         vec.at(j).second = vec.at(j-1).second;
-//         vec.at(j).first = vec.at(j-1).first;
-//         --j;
-//     }
-//     vec.at(i).second = t.second;
-//     vec.at(i).first = t.first;
-//     return 0;
-// }
-
 void searchGraph(FloatDataset& query, FloatDataset& data, int seed, int query_N, int N, int D, int K, int efK,
                 vector<vector<int> >& neighbor, string out_search_file, string ground_path, float& tim, float& rec,
                 const faiss::IndexIVFFlat* idx, const int n_bridges, const float* coarse_dis, const long* labels)
@@ -166,10 +99,6 @@ void searchGraph(FloatDataset& query, FloatDataset& data, int seed, int query_N,
             dis += data[st_point][d] * query[i][d];
         }
         updateDecrease(candidate, efK, make_pair(st_point, dis));
-        /*
-        if (i < 10)
-            cout << i << ", start point :  "<< dis << endl;
-        */
         // bridge vector (-2)
         int bridge_offset = 0;
         updateDecrease(candidate, efK, make_pair(-2, coarse_dis[i * n_bridges + bridge_offset]));
@@ -195,11 +124,6 @@ void searchGraph(FloatDataset& query, FloatDataset& data, int seed, int query_N,
                         dis += data[ids[j]][d] * query[i][d];
                     }
 
-                    /*
-                    if (i < 3 && count_imi < 200) {
-                        cout << i << ", imi candidate dis: " << dis << endl;
-                    }
-                    */
                     updateDecrease(candidate, efK, make_pair(ids[j], dis));
                 }
                 bridge_offset++;
@@ -241,7 +165,6 @@ void searchGraph(FloatDataset& query, FloatDataset& data, int seed, int query_N,
     }
     auto end = std::chrono::high_resolution_clock::now();
     cout << "efK: " << efK << " qt: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() / (double)query_N;
-    //wResult << " " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() / (double)query_N;
     tim = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() / (double)query_N;
     wfile.close();
 
@@ -267,8 +190,6 @@ void searchGraph(FloatDataset& query, FloatDataset& data, int seed, int query_N,
     }
     rgound.close();
 
-    //cout << ground_truth.size() << " " << ground_truth[0].size() << endl;
-    //cout << K << endl;
     int count = 0;
     for (int i = 0; i < query_N; i++) {
         for (int j = 0; j < K; j++) {
@@ -281,24 +202,6 @@ void searchGraph(FloatDataset& query, FloatDataset& data, int seed, int query_N,
 
     cout << " Recall: " << (1.0 * count / (query_N*K)) << endl;
     rec = (1.0 * count / (query_N*K));
-}
-
-Increase_queue find_neighbors(int i, int N, int D, int construction_k, FloatDataset& data)
-{
-    Increase_queue temp_que;
-    for (int j = 0; j < N; j++)
-    {
-        if (j == i) continue;
-        float inner_sum = 0.0;
-        // Inner product
-        for (int d=0; d<D; d++)
-        {
-            inner_sum += data[i][d]*data[j][d];
-        }
-            temp_que.push(make_pair(j,inner_sum));
-            if (temp_que.size()>construction_k) temp_que.pop();
-    }
-    return temp_que;
 }
 
 int main(int argc, char *argv[])
@@ -445,21 +348,17 @@ int main(int argc, char *argv[])
 
         int tmp, cnt = 0;
         for (int i = 0; i < nlist; ++i) {
-            // cout << labels[i] << "," << coarse_dis[i] << "\t";
             tmp = index.invlists->list_size(i);
             if (tmp > 0) {
                 cnt++;
-                // cout << i << ", list size : " << tmp << endl;
             }
         }
         cout << endl;
 
         cout << "non-empty count : " << cnt << endl;
-        // cout << "list 0 size : " << idx->invlists->list_size(0) << endl;
-
         cout << "start search" << endl;
 
-        string result_file = "./result/qt_r_K_" + to_string(construction_k) + "_" + string(argv[2]) + ".txt";
+        string result_file = "./result/IMI_qt_r_K_" + to_string(construction_k) + "_" + string(argv[2]) + ".txt";
         ofstream wResult(result_file);
         int seed = 10;
         //int st_point = rand() % N;
