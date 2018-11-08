@@ -1,5 +1,0 @@
-- [x] 把没用的code删掉
-- [x] 跑yahoo和imagenet   
-- [x] 改stop condition
-- [x] 保存pq code to file
-- [x] test diff # of bridge vectors(1000)
