@@ -8,3 +8,20 @@ Fisrt of all, I have read some papers related to KNN graph, such as HNSW and NND
 - [ ] 改stop condition
 - [ ] 保存pq code to file
 - [ ] test diff # of bridge vectors(1000)
+	- netflix
+		- non empty: 1632/16384
+		- 500
+		- 1000
+		- 2000
+	- yahoomusic
+		- non empty: 4046/65536
+		- 500 
+		- 1000
+		- 2000
+	- imagenet
+		- 423846/1048576
+		- 500
+		- 1000
+		- 2000
+		- 4000
+		- 8000
