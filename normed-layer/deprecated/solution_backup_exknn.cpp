@@ -54,6 +54,8 @@ struct _myclass {
 } myCmpClass;
 
 
+
+
 template<typename T>
 T removeExtra(T solution, int efK) {
     T result;
@@ -68,6 +70,7 @@ T removeExtra(T solution, int efK) {
 
 int deleteTop(vector<pair<int, float> >& vec, int size)
 {
+    // cout << vec.size() << " " << size << endl;
     vec.erase(vec.begin());
     pair<int, float> temp_pair;
 
@@ -106,9 +109,36 @@ int updateDecrease(vector<pair<int, float> >& vec, int size, pair<int, float> t)
     return 0;
 }
 
+// int updateIncrease(vector<pair<int, float> >& vec, int construction_k, pair<int, float> t)
+// {
+//     int i = construction_k - 1;
+//     int j;
+//     if ((t.second >= vec.back().second)) {
+//         return -1;
+//     }
+//     for (;;)
+//     {
+//         if (i == 0) break;
+//         j = i - 1;
+//         if (vec.at(j).second < t.second) break;
+//         i = j;
+//     }
+//     j = construction_k - 1;
+//     for (;;)
+//     {
+//         if (j == i) break;
+//         vec.at(j).second = vec.at(j-1).second;
+//         vec.at(j).first = vec.at(j-1).first;
+//         --j;
+//     }
+//     vec.at(i).second = t.second;
+//     vec.at(i).first = t.first;
+//     return 0;
+// }
+
 void searchGraph(FloatDataset& query, FloatDataset& data, int seed, int query_N, int N, int D, int K, int efK,
                 vector<vector<int> >& neighbor, string out_search_file, string ground_path, float& tim, float& rec,
-                unique_ptr<faiss::IndexIVFFlat>& idx, const int n_bridges, const float* coarse_dis, const long* labels)
+                const faiss::IndexIVFFlat* idx, const int n_bridges, const float* coarse_dis, const long* labels)
 {
     int flag[N];
     vector<vector<int>> solu_vec;
@@ -133,6 +163,13 @@ void searchGraph(FloatDataset& query, FloatDataset& data, int seed, int query_N,
         int st_point = rand() % N;
         flag[st_point] = 1;
         float dis = faiss::fvec_inner_product(data[st_point], query[i], D);
+        /*
+        float dis = 0.0;
+        for (int d = 0; d < D; d++)
+        {
+            dis += data[st_point][d] * query[i][d];
+        }
+        */
         updateDecrease(candidate, efK, make_pair(st_point, dis));
         /*
         if (i < 10)
@@ -159,6 +196,14 @@ void searchGraph(FloatDataset& query, FloatDataset& data, int seed, int query_N,
                     flag[ids[j]] = 1;
                     float dis = faiss::fvec_inner_product(data[ids[j]], query[i], D);
                     /*
+                    float dis = 0.0;
+                    for (int d = 0; d < D; d++)
+                    {
+                        dis += data[ids[j]][d] * query[i][d];
+                    }
+                    */
+
+                    /*
                     if (i < 3 && count_imi < 200) {
                         cout << i << ", imi candidate dis: " << dis << endl;
                     }
@@ -184,6 +229,13 @@ void searchGraph(FloatDataset& query, FloatDataset& data, int seed, int query_N,
                     {
                         flag[nei] = 1;
                         float dis = faiss::fvec_inner_product(data[nei], query[i], D);
+                        /*
+                        float dis = 0.0;
+                        for (int d = 0; d < D; d++)
+                        {
+                            dis += data[nei][d] * query[i][d];
+                        }
+                        */
                         updateDecrease(candidate, efK, make_pair(nei, dis));
                     }
                 }
@@ -200,11 +252,13 @@ void searchGraph(FloatDataset& query, FloatDataset& data, int seed, int query_N,
         solu_vec.push_back(sol);
     }
     auto end = std::chrono::high_resolution_clock::now();
+    cout << "efK: " << efK << " qt: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() / (double)query_N;
+    //wResult << " " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() / (double)query_N;
     tim = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() / (double)query_N;
-    cout << "efK: " << efK << " qt: " << tim;
     wfile.close();
 
     // recall
+    // cout << "start recall" << endl;
 
     ifstream rgound(ground_path);
     int line, kk;
@@ -225,7 +279,8 @@ void searchGraph(FloatDataset& query, FloatDataset& data, int seed, int query_N,
     }
     rgound.close();
 
-    /*
+    //cout << ground_truth.size() << " " << ground_truth[0].size() << endl;
+    //cout << K << endl;
     int count = 0;
     for (int i = 0; i < query_N; i++) {
         for (int j = 0; j < K; j++) {
@@ -235,21 +290,28 @@ void searchGraph(FloatDataset& query, FloatDataset& data, int seed, int query_N,
             }
         }
     }
-    */
-    int count = 0;
-    for (int i = 0; i < query_N; i++) {
-        for (int j = 0; j < K; j++) {
-            auto it = find(ground_truth[i].begin(), ground_truth[i].end(), solu_vec[i][j]);
-            if (it != ground_truth[i].end()) {
-                count++;
-            }
-        }
-    }
 
     cout << " Recall: " << (1.0 * count / (query_N*K)) << endl;
     rec = (1.0 * count / (query_N*K));
 }
 
+Increase_queue find_neighbors(int i, int N, int D, int construction_k, FloatDataset& data)
+{
+    Increase_queue temp_que;
+    for (int j = 0; j < N; j++)
+    {
+        if (j == i) continue;
+        float inner_sum = 0.0;
+        // Inner product
+        for (int d=0; d<D; d++)
+        {
+            inner_sum += data[i][d]*data[j][d];
+        }
+            temp_que.push(make_pair(j,inner_sum));
+            if (temp_que.size()>construction_k) temp_que.pop();
+    }
+    return temp_que;
+}
 
 int main(int argc, char *argv[])
 {
@@ -261,13 +323,11 @@ int main(int argc, char *argv[])
     string data_path(argv[6]);
     string out_construct = "construct_" + dataset + "_" + to_string(construction_k) + ".txt";
     string out_search = "search_" + dataset + ".txt";
-        
-    string faiss_outputfile = dataset + "_pq.index";
-
 
     FloatDataset data(D, N);
     data.loadFvecs(data_path);
     cout << "mode : " << mode << endl; 
+    // string faiss_outputfile = dataset + "_pq.index";
     // Construct Exact KNN Graph
     // qwer
     if (mode == "0")
@@ -276,7 +336,7 @@ int main(int argc, char *argv[])
         cout << "start construction" << endl;
         
         vector<pair<int, Pair_vector> > que;
-        auto start = std::chrono::high_resolution_clock::now();
+        const clock_t begin_time = clock();
 
         #pragma omp parallel for
         for (int i = 0; i < N; i++)
@@ -286,21 +346,26 @@ int main(int argc, char *argv[])
             for (int j = 0; j < N; j++)
             {
                 if (j == i) continue;
+                float inner_sum = 0.0;
                 // Inner product
-                float inner_sum = faiss::fvec_inner_product(data[i], data[j], D);
+                for (int d = 0; d < D; d++)
+                {
+                    inner_sum += data[i][d] * data[j][d];
+                }
+                
                 if (inner_sum >= temp_que.at(construction_k-1).second) {
                     updateDecrease(temp_que, construction_k, make_pair(j, inner_sum));
                 }
+
             }
             #pragma omp critical
             {
+                reverse(temp_que.begin(), temp_que.end());
                 que.push_back(make_pair(i, temp_que));
             }
 
         }
-        auto end = std::chrono::high_resolution_clock::now();
-        float tim = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-        cout << "Time: " << tim / 1000.0 << endl;
+        cout << "Time: " << float( clock () - begin_time ) / CLOCKS_PER_SEC;
 
         cout << "finish construction" << endl;
         sort(que.begin(), que.end(), myCmpClass);
@@ -318,22 +383,6 @@ int main(int argc, char *argv[])
             wfile << endl;
         }
         wfile.close();
-        
-        
-        // train pq code
-        size_t nhash = 2;
-        size_t nbits_subq = int(log2 (N + 1) / 2);     // good choice in general; may be modified later
-        size_t ncentroids = 1 << (nhash * nbits_subq);  // total # of centroids
-        faiss::MultiIndexQuantizer quantizer(D, nhash, nbits_subq);
-
-        faiss::MetricType metric = faiss::METRIC_L2;
-
-        faiss::IndexIVFFlat index(&quantizer, D, ncentroids, metric);
-        index.quantizer_trains_alone = true;
-
-        index.train(N, data[0]);
-        index.add(N, data[0]);
-        faiss::write_index(&index, faiss_outputfile.c_str());
     }
     else
     {
@@ -343,13 +392,27 @@ int main(int argc, char *argv[])
         string query_path(argv[7]);
         string ground_path(argv[8]);
         int K = atoi(argv[9]);
-        int n_bridges = atoi(argv[10]);   // !!!!!!!!!!!
-
         int query_N = 1000;
         // load PQ indexes from index file
-        auto idx = unique_ptr<faiss::IndexIVFFlat>(dynamic_cast<faiss::IndexIVFFlat*>(faiss::read_index(faiss_outputfile.c_str())));
+        size_t nhash = 2;
+        size_t nbits_subq = int(log2 (N + 1) / 2);     // good choice in general; may be modified later
+        size_t ncentroids = 1 << (nhash * nbits_subq);  // total # of centroids
+        faiss::MultiIndexQuantizer quantizer(D, nhash, nbits_subq);
 
-        cout << "nlist : " << idx->invlists->nlist << endl;
+        faiss::MetricType metric = faiss::METRIC_L2;
+
+        faiss::IndexIVFFlat index(&quantizer, D, ncentroids, metric);
+        index.quantizer_trains_alone = true;
+        // index.maintain_direct_map = true;
+
+        index.train(N, data[0]);
+        index.add(N, data[0]);
+
+        // faiss::write_index(&index, faiss_outputfile.c_str());
+
+        // auto idx = unique_ptr<faiss::IndexIVFFlat>(dynamic_cast<faiss::IndexIVFFlat*>(faiss::read_index(faiss_outputfile.c_str())));
+
+        cout << "nlist : " << index.invlists->nlist << endl;
 
         vector<vector<int> > neighbor;
 
@@ -379,11 +442,12 @@ int main(int argc, char *argv[])
         FloatDataset query(D, query_N);
         query.loadFvecs(query_path);
 
-        int nlist = idx->invlists->nlist;
+        int nlist = index.invlists->nlist;
+        int n_bridges = 1000;   // !!!!!!!!!!!
         long* labels = new long [query_N * n_bridges];
         float * coarse_dis = new float [query_N * n_bridges];
 
-        (dynamic_cast<faiss::MultiIndexQuantizer*>(idx->quantizer))->search_ip(query_N, query[0], n_bridges, coarse_dis, labels);  // ????????
+        (dynamic_cast<faiss::MultiIndexQuantizer*>(index.quantizer))->search_ip(query_N, query[0], n_bridges, coarse_dis, labels);  // ????????
         // add a function here : search_ip( XXXXX )
         // debug  there is still some problems with search_ip() function
         long total = query_N * n_bridges;
@@ -394,7 +458,7 @@ int main(int argc, char *argv[])
         int tmp, cnt = 0;
         for (int i = 0; i < nlist; ++i) {
             // cout << labels[i] << "," << coarse_dis[i] << "\t";
-            tmp = idx->invlists->list_size(i);
+            tmp = index.invlists->list_size(i);
             if (tmp > 0) {
                 cnt++;
                 // cout << i << ", list size : " << tmp << endl;
@@ -407,7 +471,7 @@ int main(int argc, char *argv[])
 
         cout << "start search" << endl;
 
-        string result_file = "./result/IMI_qt_r_K_" + to_string(construction_k) + "_bridge_" + to_string(n_bridges) + "_" + string(argv[2]) + ".txt";
+        string result_file = "./result/qt_r_K_" + to_string(construction_k) + "_" + string(argv[2]) + ".txt";
         ofstream wResult(result_file);
         int seed = 10;
         //int st_point = rand() % N;
@@ -416,7 +480,7 @@ int main(int argc, char *argv[])
         for (int ef = 1; ef < 100; ef+=5) ser_list.push_back(ef);
         for (int ef = 100; ef < 300; ef+=20) ser_list.push_back(ef);
         for (int ef = 300; ef < 800; ef+=50) ser_list.push_back(ef);
-        for (int ef = 800; ef <= 1200; ef+=100) ser_list.push_back(ef);
+        for (int ef = 800; ef < 2000; ef+=100) ser_list.push_back(ef);
         // for (int ef = 12000; ef < 50000; ef+=5000) ser_list.push_back(ef);
         // for (int ef = 50000; ef < 100000; ef+=1000) ser_list.push_back(ef);
 
@@ -427,7 +491,7 @@ int main(int argc, char *argv[])
         {
 
             searchGraph(query, data, seed, query_N, N, D, K, ser_list[ef],
-                        neighbor, out_search, ground_path, tim, rec, idx,
+                        neighbor, out_search, ground_path, tim, rec, &index,
                         n_bridges, coarse_dis, labels);
             wResult << ser_list[ef] << " " << tim << " " << rec << endl;
         }

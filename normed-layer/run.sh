@@ -5,6 +5,8 @@ construction_k=20
 # 0 -> construction ; 1 -> search
 mode=$1
 dataset=$2
+n_bridges=$3
+
 if [ "$2" = "netflix" ]; then
     vecsize=17770
     vecdim=300
@@ -29,5 +31,5 @@ if [ $1 -eq 0 ]; then
     time ./exknn $mode $dataset $vecsize $vecdim $construction_k $basePath 
 else
     # search
-    time ./exknn $mode $dataset $vecsize $vecdim $construction_k $basePath $queryPath $lshboxPath $topk
+    time ./exknn $mode $dataset $vecsize $vecdim $construction_k $basePath $queryPath $lshboxPath $topk $n_bridges
 fi
